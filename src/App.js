@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
@@ -9,41 +9,36 @@ import Loader from "./components/Loader/Loader";
 import Button from "./components/Button/Button";
 import Modal from "./components/Modal/Modal";
 
-class App extends Component {
-  state = {
-    value: "",
-    isLoading: false,
-    gallery: [],
-    page: 1,
-    isShow: false,
-    largeImageURL: "",
+function App() {
+  const [value, setValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [gallery, setGallery] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isShow, setIsShow] = useState(false);
+  const [largeImageURL, setLargeImageURL] = useState("");
+
+  const onChangeState = (value) => {
+    setValue(value);
+    setPage(1);
+    setGallery([]);
   };
 
-  onChangeState = (value) => {
-    this.setState({ value: value, page: 1, gallery: [] });
-  };
-
-  componentDidUpdate(prevProps, prevState) {
-    if (
-      prevState.value !== this.state.value ||
-      prevState.page !== this.state.page
-    ) {
-      this.getApiImages();
+  useEffect(() => {
+    if (value === "") {
+      return;
     }
-  }
+    getApiImages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, page]);
 
-  getApiImages = () => {
-    const { page, value } = this.state;
-    this.setState({ isLoading: true });
-
+  const getApiImages = () => {
+    setIsLoading(true);
     getImages(value, page)
       .then((hits) => {
         if (hits.length === 0) {
-          this.toastError();
+          toastError();
         }
-        this.setState((prevState) => ({
-          gallery: [...prevState.gallery, ...hits],
-        }));
+        setGallery((prevState) => [...prevState, ...hits]);
       })
       .then(() => {
         window.scrollTo({
@@ -52,26 +47,23 @@ class App extends Component {
         });
       })
       .catch()
-      .finally(() => this.setState({ isLoading: false }));
+      .finally(() => setIsLoading({ isLoading: false }));
   };
 
-  onClickImgOpen = () => {
-    this.setState(({ isShow }) => ({
-      isShow: !isShow,
-    }));
+  const onClickImgOpen = () => {
+    setIsShow(!isShow);
   };
 
-  loadMore = () => {
-    this.setState((prevState) => ({
-      page: prevState.page + 1,
-    }));
+  const loadMore = (e) => {
+    e.preventDefault();
+    setPage((prevState) => prevState + 1);
   };
 
-  changeSrc = ({ largeImageURL }) => {
-    this.setState({ largeImageURL });
+  const changeSrc = (largeImageURL) => {
+    setLargeImageURL(largeImageURL);
   };
 
-  toastError = () => {
+  const toastError = () => {
     toast.error("Nothing found for your request", {
       position: "top-center",
       autoClose: 5000,
@@ -83,37 +75,32 @@ class App extends Component {
     });
   };
 
-  render() {
-    const { gallery, isLoading, largeImageURL, isShow } = this.state;
-
-    return (
-      <div className="App">
-        <Searchbar onSubmit={this.onChangeState}></Searchbar>
-        <ImageGallery
-          gallery={gallery}
-          onClickImgOpen={this.onClickImgOpen}
-          changeSrc={this.changeSrc}
-        />
-        {isLoading && <Loader />}
-        {gallery.length > 0 ? <Button onClick={this.loadMore} /> : null}
-        {isShow && (
-          <Modal onClose={this.onClickImgOpen} largeImageURL={largeImageURL} />
-        )}
-
-        <ToastContainer
-          position="top-center"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-        />
-      </div>
-    );
-  }
+  return (
+    <div className="App">
+      <Searchbar onSubmit={onChangeState}></Searchbar>
+      <ImageGallery
+        gallery={gallery}
+        onClickImgOpen={onClickImgOpen}
+        changeSrc={changeSrc}
+      />
+      {isLoading && <Loader />}
+      {gallery.length > 0 ? <Button onClick={loadMore} /> : null}
+      {isShow && (
+        <Modal onClose={onClickImgOpen} largeImageURL={largeImageURL} />
+      )}
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+    </div>
+  );
 }
 
 export default App;
